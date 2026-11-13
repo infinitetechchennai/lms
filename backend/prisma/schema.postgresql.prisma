@@ -1,0 +1,387 @@
+// Production PostgreSQL Schema for Smartway
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String          @id @default(uuid())
+  email          String          @unique
+  passwordHash   String
+  role           String          @default("STUDENT")
+  isVerified     Boolean         @default(false)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  studentProfile StudentProfile?
+  adminProfile   AdminProfile?
+  notifications  Notification[]
+
+  @@index([email])
+}
+
+model StudentProfile {
+  id                String             @id @default(uuid())
+  userId            String             @unique
+  user              User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fullName          String
+  avatarUrl         String?
+  targetExam        String             @default("NEET")
+  targetClass       String             @default("CLASS_11")
+  streakDays        Int                @default(1)
+  totalStudyMinutes Int                @default(0)
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+
+  questionAttempts  QuestionAttempt[]
+  bookmarks         Bookmark[]
+  flashcardFolders  FlashcardFolder[]
+  flashcards        Flashcard[]
+  flashcardAttempts FlashcardAttempt[]
+  personalTasks     PersonalTask[]
+  videoFavorites    VideoFavorite[]
+  activities        UserActivity[]
+  subscriptions     Subscription[]
+
+  @@index([userId])
+}
+
+model AdminProfile {
+  id          String   @id @default(uuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fullName    String
+  department  String   @default("Curriculum & Academic Excellence")
+  permissions String   @default("ALL")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Subject {
+  id          String    @id @default(uuid())
+  code        String    @unique
+  name        String
+  description String
+  icon        String    @default("BookOpen")
+  color       String    @default("#4F46E5")
+  orderIndex  Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  chapters    Chapter[]
+  questions   Question[]
+  videos      Video[]
+}
+
+model Chapter {
+  id          String      @id @default(uuid())
+  subjectId   String
+  subject     Subject     @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  title       String
+  slug        String      @unique
+  description String
+  targetClass String      @default("CLASS_11")
+  orderIndex  Int         @default(0)
+  isPublished Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  topics      Topic[]
+  notes       Note[]
+  questions   Question[]
+  flashcards  Flashcard[]
+  videos      Video[]
+
+  @@index([subjectId, targetClass])
+}
+
+model Topic {
+  id                 String     @id @default(uuid())
+  chapterId          String
+  chapter            Chapter    @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  title              String
+  learningObjectives String?
+  orderIndex         Int        @default(0)
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+
+  notes              Note[]
+  questions          Question[]
+
+  @@index([chapterId])
+}
+
+model Note {
+  id              String     @id @default(uuid())
+  chapterId       String
+  chapter         Chapter    @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  topicId         String?
+  topic           Topic?     @relation(fields: [topicId], references: [id], onDelete: SetNull)
+  title           String
+  summary         String
+  contentMarkdown String     @db.Text
+  allowDownload   Boolean    @default(true)
+  isPublished     Boolean    @default(true)
+  viewsCount      Int        @default(0)
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  files           NoteFile[]
+
+  @@index([chapterId])
+}
+
+model NoteFile {
+  id            String   @id @default(uuid())
+  noteId        String
+  note          Note     @relation(fields: [noteId], references: [id], onDelete: Cascade)
+  title         String
+  fileUrl       String
+  fileType      String   @default("application/pdf")
+  fileSizeBytes Int      @default(0)
+  isDownloadable Boolean @default(true)
+  createdAt     DateTime @default(now())
+}
+
+model Question {
+  id            String               @id @default(uuid())
+  subjectId     String
+  subject       Subject              @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  chapterId     String
+  chapter       Chapter              @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  topicId       String?
+  topic         Topic?               @relation(fields: [topicId], references: [id], onDelete: SetNull)
+  content       String               @db.Text
+  imageUrl      String?
+  questionType  String               @default("SINGLE_CHOICE")
+  examType      String               @default("NEET")
+  examYear      Int                  @default(2023)
+  difficulty    String               @default("MEDIUM")
+  marks         Int                  @default(4)
+  negativeMarks Int                  @default(1)
+  isPublished   Boolean              @default(true)
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+
+  options       QuestionOption[]
+  explanation   QuestionExplanation?
+  attempts      QuestionAttempt[]
+  bookmarks     Bookmark[]
+
+  @@index([subjectId, chapterId, examType, examYear])
+}
+
+model QuestionOption {
+  id         String   @id @default(uuid())
+  questionId String
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  label      String
+  content    String   @db.Text
+  isCorrect  Boolean  @default(false)
+
+  @@index([questionId])
+}
+
+model QuestionExplanation {
+  id         String   @id @default(uuid())
+  questionId String   @unique
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  content    String   @db.Text
+  formula    String?
+  diagramUrl String?
+}
+
+model QuestionAttempt {
+  id                 String         @id @default(uuid())
+  studentId          String
+  student            StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  questionId         String
+  question           Question       @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  selectedOptionIds  String
+  numericalAnswer    Float?
+  isCorrect          Boolean        @default(false)
+  timeSpentSeconds   Int            @default(0)
+  createdAt          DateTime       @default(now())
+
+  @@index([studentId, questionId])
+}
+
+model Bookmark {
+  id        String         @id @default(uuid())
+  studentId String
+  student   StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  questionId String
+  question  Question       @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  category  String
+  notes     String?
+  createdAt DateTime       @default(now())
+
+  @@unique([studentId, questionId, category])
+  @@index([studentId, category])
+}
+
+model FlashcardFolder {
+  id        String         @id @default(uuid())
+  studentId String
+  student   StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  name      String
+  color     String         @default("#4F46E5")
+  createdAt DateTime       @default(now())
+
+  cards     Flashcard[]
+
+  @@index([studentId])
+}
+
+model Flashcard {
+  id           String             @id @default(uuid())
+  studentId    String
+  student      StudentProfile     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  folderId     String?
+  folder       FlashcardFolder?   @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  chapterId    String?
+  chapter      Chapter?           @relation(fields: [chapterId], references: [id], onDelete: SetNull)
+  frontContent String             @db.Text
+  backContent  String             @db.Text
+  hint         String?
+  masteryLevel Int                @default(0)
+  nextReviewAt DateTime           @default(now())
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+
+  attempts     FlashcardAttempt[]
+
+  @@index([studentId, nextReviewAt])
+}
+
+model FlashcardAttempt {
+  id                 String         @id @default(uuid())
+  studentId          String
+  student            StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  flashcardId        String
+  flashcard          Flashcard      @relation(fields: [flashcardId], references: [id], onDelete: Cascade)
+  remembered         Boolean        @default(false)
+  responseTimeSeconds Int           @default(0)
+  createdAt          DateTime       @default(now())
+}
+
+model StudyPlan {
+  id          String          @id @default(uuid())
+  title       String
+  description String          @db.Text
+  targetExam  String          @default("NEET")
+  durationWeeks Int           @default(12)
+  isPublished Boolean         @default(true)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  tasks       StudyPlanTask[]
+}
+
+model StudyPlanTask {
+  id          String    @id @default(uuid())
+  planId      String
+  plan        StudyPlan @relation(fields: [planId], references: [id], onDelete: Cascade)
+  dayNumber   Int
+  subjectCode String
+  chapterName String
+  taskType    String    @default("STUDY")
+  title       String
+  durationMin Int       @default(60)
+
+  @@index([planId, dayNumber])
+}
+
+model PersonalTask {
+  id               String         @id @default(uuid())
+  studentId        String
+  student          StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  title            String
+  subjectCode      String?
+  chapterName      String?
+  dueDate          DateTime
+  estimatedMinutes Int            @default(45)
+  priority         String         @default("MEDIUM")
+  isCompleted      Boolean        @default(false)
+  completedAt      DateTime?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  @@index([studentId, dueDate])
+}
+
+model Video {
+  id                 String          @id @default(uuid())
+  subjectId          String
+  subject            Subject         @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  chapterId          String?
+  chapter            Chapter?        @relation(fields: [chapterId], references: [id], onDelete: SetNull)
+  title              String
+  description        String          @db.Text
+  durationSeconds    Int             @default(35)
+  videoUrl           String
+  cloudflareStreamId String?
+  thumbnailUrl       String?
+  viewsCount         Int             @default(0)
+  isPublished        Boolean         @default(true)
+  createdAt          DateTime        @default(now())
+  updatedAt          DateTime        @updatedAt
+
+  favorites          VideoFavorite[]
+
+  @@index([subjectId])
+}
+
+model VideoFavorite {
+  id        String         @id @default(uuid())
+  studentId String
+  student   StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  videoId   String
+  video     Video          @relation(fields: [videoId], references: [id], onDelete: Cascade)
+  createdAt DateTime       @default(now())
+
+  @@unique([studentId, videoId])
+}
+
+model UserActivity {
+  id          String         @id @default(uuid())
+  studentId   String
+  student     StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  actionType  String
+  title       String
+  metadata    String?
+  createdAt   DateTime       @default(now())
+
+  @@index([studentId, createdAt])
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  link      String?
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model Subscription {
+  id        String         @id @default(uuid())
+  studentId String
+  student   StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  planType  String         @default("PRO_ANNUAL")
+  status    String         @default("ACTIVE")
+  startDate DateTime       @default(now())
+  endDate   DateTime
+  createdAt DateTime       @default(now())
+
+  @@index([studentId])
+}
+
