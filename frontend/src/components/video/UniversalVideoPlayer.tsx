@@ -27,7 +27,7 @@ interface UniversalVideoPlayerProps {
 function extractYouTubeId(url: string): string | null {
   if (!url) return null;
   const match = url.match(
-    /(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/))([\w-]{11})/
+    /(?:youtu\.be\/|(?:www\.|m\.)?(?:youtube\.com|youtube-nocookie\.com)\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|shorts\/|live\/))([\w-]{11})/
   );
   return match ? match[1] : null;
 }
@@ -176,15 +176,30 @@ export default function UniversalVideoPlayer({
           <p className="text-[11px] text-slate-300 max-w-xs mx-auto">
             The media link might require direct access or an alternate browser codec.
           </p>
-          <a
-            href={resolvedUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center space-x-1.5 bg-white/20 hover:bg-white/30 text-white text-xs px-3.5 py-1.5 rounded-lg transition-colors"
-          >
-            <span>Open Direct Media URL</span>
-            <ExternalLink className="w-3.5 h-3.5" />
-          </a>
+          <div className="flex items-center justify-center space-x-2">
+            <button
+              onClick={() => {
+                setHasError(false);
+                if (videoRef.current) {
+                  videoRef.current.load();
+                  videoRef.current.play().catch(() => {});
+                }
+              }}
+              className="inline-flex items-center space-x-1.5 bg-indigo-600 hover:bg-indigo-700 text-white text-xs px-3.5 py-1.5 rounded-lg transition-colors font-medium"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Retry</span>
+            </button>
+            <a
+              href={resolvedUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center space-x-1.5 bg-white/20 hover:bg-white/30 text-white text-xs px-3.5 py-1.5 rounded-lg transition-colors"
+            >
+              <span>Open Direct Media URL</span>
+              <ExternalLink className="w-3.5 h-3.5" />
+            </a>
+          </div>
         </div>
       ) : (
         <>
