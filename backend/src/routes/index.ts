@@ -9,6 +9,7 @@ import plannerRoutes from '../modules/planner/planner.routes.js';
 import videosRoutes from '../modules/videos/videos.routes.js';
 import analyticsRoutes from '../modules/analytics/analytics.routes.js';
 import adminRoutes from '../modules/admin/admin.routes.js';
+import uploadRoutes from '../modules/upload/upload.routes.js';
 
 const router = Router();
 
@@ -22,6 +23,7 @@ router.use('/planner', plannerRoutes);
 router.use('/videos', videosRoutes);
 router.use('/analytics', analyticsRoutes);
 router.use('/admin', adminRoutes);
+router.use('/upload', uploadRoutes);
 
 router.get('/health', (req, res) => {
   res.json({

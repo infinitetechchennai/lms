@@ -5,24 +5,35 @@ import { AuthenticatedRequest } from '../../middleware/auth.js';
 
 export async function getAdminPlatformStats(req: AuthenticatedRequest, res: Response) {
   try {
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
     const [
       totalStudents,
       totalNotes,
       totalQuestions,
       totalVideos,
+      totalShortVideos,
+      totalFullVideos,
       totalAttempts,
       recentUsers,
+      activeActivities,
     ] = await Promise.all([
       prisma.studentProfile.count(),
       prisma.note.count(),
       prisma.question.count(),
       prisma.video.count(),
+      prisma.video.count({ where: { videoType: 'SHORT' } }),
+      prisma.video.count({ where: { videoType: 'FULL' } }),
       prisma.questionAttempt.count(),
       prisma.user.findMany({
         where: { role: 'STUDENT' },
         take: 5,
         orderBy: { createdAt: 'desc' },
         include: { studentProfile: true },
+      }),
+      prisma.userActivity.groupBy({
+        by: ['studentId'],
+        where: { createdAt: { gte: oneDayAgo } },
       }),
     ]);
 
@@ -33,8 +44,10 @@ export async function getAdminPlatformStats(req: AuthenticatedRequest, res: Resp
         totalNotes,
         totalQuestions,
         totalVideos,
+        totalShortVideos,
+        totalFullVideos,
         totalAttempts,
-        activeTodayCount: totalStudents > 0 ? Math.ceil(totalStudents * 0.75) : 0,
+        activeTodayCount: activeActivities.length,
         recentRegistrations: recentUsers,
       },
       'Platform statistics retrieved'
@@ -152,7 +165,17 @@ export async function createChapter(req: AuthenticatedRequest, res: Response) {
 
 export async function createNote(req: AuthenticatedRequest, res: Response) {
   try {
-    const { chapterId, topicId, title, summary, contentMarkdown, allowDownload } = req.body;
+    const {
+      chapterId,
+      topicId,
+      title,
+      summary,
+      contentMarkdown,
+      allowDownload,
+      pdfUrl,
+      pdfTitle,
+      pdfSizeBytes,
+    } = req.body;
 
     if (!chapterId || !title || !contentMarkdown) {
       return sendError(res, 'Chapter, Title, and Note Markdown content are required', 400);
@@ -165,11 +188,25 @@ export async function createNote(req: AuthenticatedRequest, res: Response) {
         title,
         summary: summary || title,
         contentMarkdown,
-        allowDownload: allowDownload !== undefined ? allowDownload : true,
+        allowDownload: allowDownload !== undefined ? Boolean(allowDownload) : true,
         isPublished: true,
+        ...(pdfUrl && {
+          files: {
+            create: [
+              {
+                title: pdfTitle || `${title} Document.pdf`,
+                fileUrl: pdfUrl,
+                fileType: 'application/pdf',
+                fileSizeBytes: pdfSizeBytes ? parseInt(pdfSizeBytes, 10) : 0,
+                isDownloadable: allowDownload !== undefined ? Boolean(allowDownload) : true,
+              },
+            ],
+          },
+        }),
       },
       include: {
         chapter: true,
+        files: true,
       },
     });
 
@@ -293,8 +330,16 @@ export async function bulkImportQuestions(req: AuthenticatedRequest, res: Respon
 
 export async function createVideo(req: AuthenticatedRequest, res: Response) {
   try {
-    const { subjectId, chapterId, title, description, durationSeconds, videoUrl, thumbnailUrl } =
-      req.body;
+    const {
+      subjectId,
+      chapterId,
+      title,
+      description,
+      videoType = 'SHORT',
+      durationSeconds,
+      videoUrl,
+      thumbnailUrl,
+    } = req.body;
 
     if (!subjectId || !title || !videoUrl) {
       return sendError(res, 'Subject, Title, and Video URL are required', 400);
@@ -306,9 +351,14 @@ export async function createVideo(req: AuthenticatedRequest, res: Response) {
         chapterId: chapterId || null,
         title,
         description: description || title,
-        durationSeconds: durationSeconds ? parseInt(durationSeconds, 10) : 35,
+        videoType: videoType === 'FULL' ? 'FULL' : 'SHORT',
+        durationSeconds: durationSeconds ? parseInt(durationSeconds, 10) : (videoType === 'FULL' ? 2400 : 35),
         videoUrl,
         thumbnailUrl: thumbnailUrl || null,
+      },
+      include: {
+        subject: true,
+        chapter: true,
       },
     });
 
@@ -342,10 +392,47 @@ export async function getAdminNotesList(req: AuthenticatedRequest, res: Response
 export async function updateNote(req: AuthenticatedRequest, res: Response) {
   try {
     const { id } = req.params;
-    const { title, summary, contentMarkdown, allowDownload, chapterId } = req.body;
+    const {
+      title,
+      summary,
+      contentMarkdown,
+      allowDownload,
+      chapterId,
+      pdfUrl,
+      pdfTitle,
+      pdfSizeBytes,
+    } = req.body;
 
-    const existing = await prisma.note.findUnique({ where: { id } });
+    const existing = await prisma.note.findUnique({
+      where: { id },
+      include: { files: true },
+    });
     if (!existing) return sendError(res, 'Note not found', 404);
+
+    if (pdfUrl !== undefined) {
+      if (pdfUrl && existing.files.length > 0) {
+        await prisma.noteFile.update({
+          where: { id: existing.files[0].id },
+          data: {
+            title: pdfTitle || existing.files[0].title,
+            fileUrl: pdfUrl,
+            fileSizeBytes: pdfSizeBytes ? parseInt(pdfSizeBytes, 10) : existing.files[0].fileSizeBytes,
+            isDownloadable: allowDownload !== undefined ? Boolean(allowDownload) : true,
+          },
+        });
+      } else if (pdfUrl) {
+        await prisma.noteFile.create({
+          data: {
+            noteId: id,
+            title: pdfTitle || `${title || existing.title} Document.pdf`,
+            fileUrl: pdfUrl,
+            fileType: 'application/pdf',
+            fileSizeBytes: pdfSizeBytes ? parseInt(pdfSizeBytes, 10) : 0,
+            isDownloadable: allowDownload !== undefined ? Boolean(allowDownload) : true,
+          },
+        });
+      }
+    }
 
     const updated = await prisma.note.update({
       where: { id },
@@ -356,7 +443,10 @@ export async function updateNote(req: AuthenticatedRequest, res: Response) {
         ...(allowDownload !== undefined && { allowDownload: Boolean(allowDownload) }),
         ...(chapterId && { chapterId }),
       },
-      include: { chapter: { include: { subject: true } } },
+      include: {
+        chapter: { include: { subject: true } },
+        files: true,
+      },
     });
 
     return sendSuccess(res, updated, 'Note updated successfully');
@@ -395,8 +485,16 @@ export async function getAdminVideosList(req: AuthenticatedRequest, res: Respons
 export async function updateVideo(req: AuthenticatedRequest, res: Response) {
   try {
     const { id } = req.params;
-    const { title, description, durationSeconds, videoUrl, thumbnailUrl, subjectId, chapterId } =
-      req.body;
+    const {
+      title,
+      description,
+      videoType,
+      durationSeconds,
+      videoUrl,
+      thumbnailUrl,
+      subjectId,
+      chapterId,
+    } = req.body;
 
     const existing = await prisma.video.findUnique({ where: { id } });
     if (!existing) return sendError(res, 'Video not found', 404);
@@ -406,6 +504,7 @@ export async function updateVideo(req: AuthenticatedRequest, res: Response) {
       data: {
         ...(title && { title }),
         ...(description !== undefined && { description }),
+        ...(videoType && { videoType }),
         ...(durationSeconds && { durationSeconds: parseInt(durationSeconds, 10) }),
         ...(videoUrl && { videoUrl }),
         ...(thumbnailUrl !== undefined && { thumbnailUrl }),
@@ -593,4 +692,96 @@ export async function deleteChapter(req: AuthenticatedRequest, res: Response) {
     return sendError(res, 'Failed to delete chapter', 500, err.message);
   }
 }
+
+// ---------------- STUDY PLANS MANAGEMENT ----------------
+
+export async function getAdminPlansList(req: AuthenticatedRequest, res: Response) {
+  try {
+    const plans = await prisma.studyPlan.findMany({
+      orderBy: { createdAt: 'desc' },
+      include: {
+        tasks: {
+          orderBy: { dayNumber: 'asc' },
+        },
+      },
+    });
+    return sendSuccess(res, plans, 'Admin study plans retrieved');
+  } catch (err: any) {
+    return sendError(res, 'Failed to fetch study plans list', 500, err.message);
+  }
+}
+
+export async function createAdminPlan(req: AuthenticatedRequest, res: Response) {
+  try {
+    const { title, description, targetExam, durationWeeks, tasks } = req.body;
+
+    if (!title || !description) {
+      return sendError(res, 'Title and Description are required', 400);
+    }
+
+    const plan = await prisma.studyPlan.create({
+      data: {
+        title,
+        description,
+        targetExam: targetExam || 'NEET',
+        durationWeeks: durationWeeks ? parseInt(durationWeeks, 10) : 12,
+        isPublished: true,
+        ...(tasks && Array.isArray(tasks) && {
+          tasks: {
+            create: tasks.map((t: any, index: number) => ({
+              dayNumber: t.dayNumber || index + 1,
+              subjectCode: t.subjectCode || 'BIOLOGY',
+              chapterName: t.chapterName || 'General Curriculum',
+              taskType: t.taskType || 'STUDY',
+              title: t.title || 'Study Session',
+              durationMin: t.durationMin ? parseInt(t.durationMin, 10) : 60,
+            })),
+          },
+        }),
+      },
+      include: { tasks: true },
+    });
+
+    return sendSuccess(res, plan, 'Study plan created successfully', 201);
+  } catch (err: any) {
+    return sendError(res, 'Failed to create study plan', 500, err.message);
+  }
+}
+
+export async function updateAdminPlan(req: AuthenticatedRequest, res: Response) {
+  try {
+    const { id } = req.params;
+    const { title, description, targetExam, durationWeeks, isPublished } = req.body;
+
+    const existing = await prisma.studyPlan.findUnique({ where: { id } });
+    if (!existing) return sendError(res, 'Study plan not found', 404);
+
+    const updated = await prisma.studyPlan.update({
+      where: { id },
+      data: {
+        ...(title && { title }),
+        ...(description !== undefined && { description }),
+        ...(targetExam && { targetExam }),
+        ...(durationWeeks !== undefined && { durationWeeks: parseInt(durationWeeks, 10) }),
+        ...(isPublished !== undefined && { isPublished: Boolean(isPublished) }),
+      },
+      include: { tasks: true },
+    });
+
+    return sendSuccess(res, updated, 'Study plan updated successfully');
+  } catch (err: any) {
+    return sendError(res, 'Failed to update study plan', 500, err.message);
+  }
+}
+
+export async function deleteAdminPlan(req: AuthenticatedRequest, res: Response) {
+  try {
+    const { id } = req.params;
+    await prisma.studyPlan.delete({ where: { id } });
+    return sendSuccess(res, null, 'Study plan deleted successfully');
+  } catch (err: any) {
+    return sendError(res, 'Failed to delete study plan', 500, err.message);
+  }
+}
+
 

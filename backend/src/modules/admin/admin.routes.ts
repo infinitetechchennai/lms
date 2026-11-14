@@ -20,6 +20,10 @@ import {
   getAdminVideosList,
   updateVideo,
   deleteVideo,
+  getAdminPlansList,
+  createAdminPlan,
+  updateAdminPlan,
+  deleteAdminPlan,
 } from './admin.controller.js';
 import { authenticateToken, requireRole } from '../../middleware/auth.js';
 
@@ -58,5 +62,11 @@ router.get('/videos-list', getAdminVideosList);
 router.post('/videos', createVideo);
 router.put('/videos/:id', updateVideo);
 router.delete('/videos/:id', deleteVideo);
+
+// Study Plans CRUD
+router.get('/plans-list', getAdminPlansList);
+router.post('/plans', createAdminPlan);
+router.put('/plans/:id', updateAdminPlan);
+router.delete('/plans/:id', deleteAdminPlan);
 
 export default router;

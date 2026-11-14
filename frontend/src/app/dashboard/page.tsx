@@ -438,7 +438,7 @@ export default function StudentDashboard() {
 
                 <div className="pt-4 border-t border-slate-100 mt-4 flex items-center justify-between">
                   <span className="text-xs text-slate-500">
-                    {sub._count?.chapters || 12} Chapters
+                    {sub._count?.chapters ?? 0} Chapters
                   </span>
                   <Link
                     href={`/dashboard/pyq?subjectCode=${sub.code}`}
@@ -461,41 +461,33 @@ export default function StudentDashboard() {
           <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
             <h3 className="font-bold text-base text-slate-900 mb-4">Continue Learning</h3>
             <div className="space-y-3">
-              <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between">
-                <div className="space-y-1">
-                  <span className="text-[10px] font-bold text-indigo-700 bg-indigo-100 px-2 py-0.5 rounded">
-                    Mathematics • Class 12
-                  </span>
-                  <h4 className="text-sm font-bold text-slate-900">
-                    Definite Integrals and Area Under Curves
-                  </h4>
-                  <p className="text-xs text-slate-500">King Property & Leibniz's Rule</p>
-                </div>
-                <Link
-                  href="/dashboard/notes"
-                  className="bg-[#4F46E5] hover:bg-indigo-700 text-white font-semibold text-xs px-3.5 py-2 rounded-lg transition-all"
+              {subjects.slice(0, 3).map((sub) => (
+                <div
+                  key={sub.id}
+                  className="p-4 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between"
                 >
-                  Resume
-                </Link>
-              </div>
-
-              <div className="p-4 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between">
-                <div className="space-y-1">
-                  <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded">
-                    Physics • Class 12
-                  </span>
-                  <h4 className="text-sm font-bold text-slate-900">
-                    Current Electricity: Kirchhoff's Laws
-                  </h4>
-                  <p className="text-xs text-slate-500">15 PYQs ready for practice</p>
+                  <div className="space-y-1">
+                    <span
+                      className="text-[10px] font-bold px-2 py-0.5 rounded"
+                      style={{ backgroundColor: `${sub.color}20`, color: sub.color }}
+                    >
+                      {sub.name} • {targetClass.replace('_', ' ')}
+                    </span>
+                    <h4 className="text-sm font-bold text-slate-900">
+                      {sub.name} High-Yield NCERT Curriculum
+                    </h4>
+                    <p className="text-xs text-slate-500">
+                      {sub._count?.chapters ?? 0} Chapters • {sub._count?.questions ?? 0} Verified PYQs
+                    </p>
+                  </div>
+                  <Link
+                    href={`/dashboard/pyq?subjectCode=${sub.code}`}
+                    className="bg-[#4F46E5] hover:bg-indigo-700 text-white font-semibold text-xs px-3.5 py-2 rounded-lg transition-all"
+                  >
+                    Solve PYQs
+                  </Link>
                 </div>
-                <Link
-                  href="/dashboard/pyq?subjectCode=PHYSICS"
-                  className="bg-[#4F46E5] hover:bg-indigo-700 text-white font-semibold text-xs px-3.5 py-2 rounded-lg transition-all"
-                >
-                  Solve PYQs
-                </Link>
-              </div>
+              ))}
             </div>
           </div>
 

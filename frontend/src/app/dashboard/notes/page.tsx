@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { apiRequest } from '@/lib/api';
+import { apiRequest, resolveMediaUrl } from '@/lib/api';
 import { Note, Subject } from '@/types';
 import {
   BookOpen,
@@ -14,6 +14,8 @@ import {
   ExternalLink,
   ChevronRight,
   Sparkles,
+  Maximize2,
+  Layers,
 } from 'lucide-react';
 
 export default function NotesPage() {
@@ -25,6 +27,7 @@ export default function NotesPage() {
   const [selectedSubject, setSelectedSubject] = useState<string>('');
   const [search, setSearch] = useState<string>('');
   const [activeNote, setActiveNote] = useState<Note | null>(null);
+  const [readingMode, setReadingMode] = useState<'SUMMARY' | 'PDF'>('SUMMARY');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -42,6 +45,7 @@ export default function NotesPage() {
           setNotes(notesRes.data);
           if (notesRes.data.length > 0) {
             setActiveNote(notesRes.data[0]);
+            // If the first note has a PDF, keep default or allow easy toggle
           }
         }
       } catch (e) {
@@ -87,13 +91,16 @@ export default function NotesPage() {
     }
   };
 
+  const attachedPdf = activeNote?.files && activeNote.files.length > 0 ? activeNote.files[0] : null;
+  const resolvedPdfUrl = attachedPdf ? resolveMediaUrl(attachedPdf.fileUrl) : null;
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
         <div>
-          <h1 className="text-2xl font-extrabold text-slate-900">High-Yield Notes & Formulae</h1>
+          <h1 className="text-2xl font-extrabold text-slate-900">High-Yield Notes &amp; PDF Books</h1>
           <p className="text-xs text-slate-500 mt-1">
-            Concise NCERT summaries, formulas, tables, and downloadable PDF documents.
+            Concise NCERT summaries, formulas, tables, and readable in-app PDF textbook chapters.
           </p>
         </div>
 
@@ -104,8 +111,8 @@ export default function NotesPage() {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search notes or formulas..."
-            className="w-full pl-9 pr-4 py-2 text-xs bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#4F46E5]"
+            placeholder="Search notes and formulas..."
+            className="w-full pl-9 pr-3 py-2 text-xs rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#4F46E5] bg-white"
           />
         </form>
       </div>
@@ -114,7 +121,7 @@ export default function NotesPage() {
       <div className="flex space-x-2 overflow-x-auto pb-1">
         <button
           onClick={() => handleFilter('')}
-          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border whitespace-nowrap ${
             selectedSubject === ''
               ? 'border-[#4F46E5] bg-indigo-50 text-[#4F46E5]'
               : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50'
@@ -137,23 +144,35 @@ export default function NotesPage() {
         ))}
       </div>
 
-      {/* 2-Column Note Reader Experience */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      {/* 2-Column Reader Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
         {/* Left Column: Notes List */}
         <div className="lg:col-span-4 space-y-3">
-          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-            Available Documents ({notes.length})
-          </p>
-          <div className="space-y-2 max-h-[750px] overflow-y-auto pr-1">
+          <h3 className="font-bold text-xs text-slate-500 uppercase tracking-wider px-1">
+            Available Study Units ({notes.length})
+          </h3>
+
+          <div className="space-y-2.5 max-h-[780px] overflow-y-auto pr-1">
+            {loading && (
+              <div className="p-8 text-center text-xs text-slate-400">Loading notes...</div>
+            )}
+            {!loading && notes.length === 0 && (
+              <div className="p-8 text-center text-xs text-slate-400 bg-white rounded-xl border border-slate-200">
+                No notes found matching your selection.
+              </div>
+            )}
             {notes.map((note) => {
               const isSelected = activeNote?.id === note.id;
+              const hasPdf = note.files && note.files.length > 0;
               return (
                 <div
                   key={note.id}
-                  onClick={() => setActiveNote(note)}
+                  onClick={() => {
+                    setActiveNote(note);
+                  }}
                   className={`p-4 rounded-xl border text-left cursor-pointer transition-all ${
                     isSelected
-                      ? 'border-[#4F46E5] bg-indigo-50/60 shadow-sm'
+                      ? 'border-[#4F46E5] bg-indigo-50/70 shadow-xs ring-1 ring-indigo-300'
                       : 'border-slate-200 bg-white hover:bg-slate-50'
                   }`}
                 >
@@ -162,7 +181,7 @@ export default function NotesPage() {
                       {note.chapter?.subject?.name || 'Curriculum'}
                     </span>
                     <span>•</span>
-                    <span>{note.chapter?.targetClass?.replace('_', ' ')}</span>
+                    <span>{note.chapter?.title}</span>
                   </div>
                   <h4 className="text-xs font-bold text-slate-900 leading-snug line-clamp-2">
                     {note.title}
@@ -173,10 +192,10 @@ export default function NotesPage() {
                       <Eye className="w-3 h-3" />
                       <span>{note.viewsCount} views</span>
                     </span>
-                    {note.files && note.files.length > 0 && (
-                      <span className="text-indigo-600 font-semibold flex items-center space-x-1">
+                    {hasPdf && (
+                      <span className="text-indigo-600 font-bold flex items-center space-x-1 bg-indigo-50 px-2 py-0.5 rounded">
                         <FileText className="w-3 h-3" />
-                        <span>PDF Included</span>
+                        <span>PDF Book</span>
                       </span>
                     )}
                   </div>
@@ -186,7 +205,7 @@ export default function NotesPage() {
           </div>
         </div>
 
-        {/* Right Column: In-App Document & Markdown Viewer */}
+        {/* Right Column: In-App Document & PDF Reader */}
         <div className="lg:col-span-8 bg-white border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-sm space-y-6">
           {activeNote ? (
             <div>
@@ -202,10 +221,38 @@ export default function NotesPage() {
                     </span>
                   </div>
 
+                  {/* Mode switcher if PDF attached */}
+                  {attachedPdf && (
+                    <div className="flex bg-slate-100 p-1 rounded-xl">
+                      <button
+                        onClick={() => setReadingMode('SUMMARY')}
+                        className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+                          readingMode === 'SUMMARY'
+                            ? 'bg-white text-indigo-700 shadow-xs'
+                            : 'text-slate-600 hover:text-slate-900'
+                        }`}
+                      >
+                        📝 High-Yield Notes
+                      </button>
+                      <button
+                        onClick={() => setReadingMode('PDF')}
+                        className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center space-x-1 ${
+                          readingMode === 'PDF'
+                            ? 'bg-white text-indigo-700 shadow-xs'
+                            : 'text-slate-600 hover:text-slate-900'
+                        }`}
+                      >
+                        <FileText className="w-3.5 h-3.5" />
+                        <span>📖 In-App PDF Book</span>
+                      </button>
+                    </div>
+                  )}
+
                   {/* PDF Download Button if permitted */}
-                  {activeNote.allowDownload && activeNote.files && activeNote.files[0] && (
+                  {activeNote.allowDownload && attachedPdf && (
                     <a
-                      href={activeNote.files[0].fileUrl}
+                      href={resolvedPdfUrl || attachedPdf.fileUrl}
+                      download
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center space-x-1.5 bg-[#4F46E5] hover:bg-indigo-700 text-white font-semibold text-xs px-3.5 py-2 rounded-xl transition-all shadow-sm"
@@ -224,42 +271,69 @@ export default function NotesPage() {
                 </p>
               </div>
 
-              {/* In-App Reader Content */}
-              <div className="py-6 prose prose-indigo max-w-none text-sm text-slate-800 leading-relaxed space-y-4">
-                <div className="whitespace-pre-wrap font-sans">
-                  {activeNote.contentMarkdown}
-                </div>
-              </div>
+              {/* VIEW 1: MARKDOWN & FORMULAE */}
+              {readingMode === 'SUMMARY' && (
+                <div className="py-6 prose prose-indigo max-w-none text-sm text-slate-800 leading-relaxed space-y-4">
+                  <div className="whitespace-pre-wrap font-sans">
+                    {activeNote.contentMarkdown}
+                  </div>
 
-              {/* In-App PDF Embed / Simulation Viewer */}
-              {activeNote.files && activeNote.files.length > 0 && (
-                <div className="mt-8 border border-slate-200 rounded-xl overflow-hidden">
-                  <div className="bg-slate-900 text-white px-4 py-2.5 flex items-center justify-between text-xs font-semibold">
+                  {/* Attached PDF Banner */}
+                  {attachedPdf && (
+                    <div className="mt-8 p-4 bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-100 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0 shadow-sm">
+                          <FileText className="w-5 h-5" />
+                        </div>
+                        <div>
+                          <p className="font-bold text-xs text-slate-900">
+                            Attached Textbook: {attachedPdf.title}
+                          </p>
+                          <p className="text-[11px] text-slate-500">
+                            Complete official textbook chapter &amp; illustrated derivations.
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setReadingMode('PDF')}
+                        className="inline-flex items-center space-x-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-xs px-4 py-2 rounded-xl transition-all shadow-xs"
+                      >
+                        <BookOpen className="w-3.5 h-3.5" />
+                        <span>Read Book in Viewer</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* VIEW 2: IN-APP PDF VIEWER */}
+              {readingMode === 'PDF' && attachedPdf && (
+                <div className="py-4 space-y-4">
+                  <div className="flex items-center justify-between p-3 bg-slate-900 text-white rounded-xl text-xs font-semibold">
                     <div className="flex items-center space-x-2">
                       <FileText className="w-4 h-4 text-indigo-400" />
-                      <span>{activeNote.files[0].title} (In-App PDF Viewer)</span>
+                      <span>{attachedPdf.title}</span>
                     </div>
-                    <span className="text-[11px] text-slate-400">PDF.js Rendering Engine</span>
+                    <div className="flex items-center space-x-3">
+                      <a
+                        href={resolvedPdfUrl || attachedPdf.fileUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center space-x-1 text-slate-300 hover:text-white transition-colors"
+                      >
+                        <span>Open in New Tab</span>
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </a>
+                    </div>
                   </div>
-                  <div className="p-8 bg-slate-100 text-center space-y-3">
-                    <div className="w-12 h-12 rounded-xl bg-white text-[#4F46E5] flex items-center justify-center mx-auto shadow-sm">
-                      <FileText className="w-6 h-6" />
-                    </div>
-                    <p className="text-xs font-bold text-slate-700">
-                      Document: {activeNote.files[0].title}
-                    </p>
-                    <p className="text-[11px] text-slate-500">
-                      High-Yield Formulas and NCERT Tables Compiled for Quick Revision
-                    </p>
-                    <a
-                      href={activeNote.files[0].fileUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center space-x-1.5 bg-white border border-slate-300 hover:bg-slate-50 text-slate-800 text-xs font-semibold px-4 py-2 rounded-lg transition-all"
-                    >
-                      <ExternalLink className="w-3.5 h-3.5 text-[#4F46E5]" />
-                      <span>Open Fullscreen Document</span>
-                    </a>
+
+                  {/* PDF Iframe Element */}
+                  <div className="relative w-full h-[750px] bg-slate-100 rounded-2xl overflow-hidden border border-slate-200 shadow-inner">
+                    <iframe
+                      src={`${resolvedPdfUrl || attachedPdf.fileUrl}#toolbar=1`}
+                      className="w-full h-full border-0"
+                      title={attachedPdf.title}
+                    />
                   </div>
                 </div>
               )}
@@ -274,4 +348,3 @@ export default function NotesPage() {
     </div>
   );
 }
-

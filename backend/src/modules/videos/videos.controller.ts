@@ -5,7 +5,7 @@ import { AuthenticatedRequest } from '../../middleware/auth.js';
 
 export async function getVideos(req: AuthenticatedRequest, res: Response) {
   try {
-    const { subjectCode, chapterId, search, page = '1', limit = '10' } = req.query;
+    const { subjectCode, chapterId, search, videoType, page = '1', limit = '10' } = req.query;
 
     const pageNum = parseInt(page as string, 10);
     const limitNum = parseInt(limit as string, 10);
@@ -14,6 +14,10 @@ export async function getVideos(req: AuthenticatedRequest, res: Response) {
     const where: any = {
       isPublished: true,
     };
+
+    if (videoType && (videoType === 'SHORT' || videoType === 'FULL')) {
+      where.videoType = videoType;
+    }
 
     if (subjectCode) {
       where.subject = {

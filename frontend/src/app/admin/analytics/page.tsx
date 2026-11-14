@@ -37,7 +37,7 @@ export default function AdminAnalyticsPage() {
         <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm text-center">
           <p className="text-xs font-semibold text-slate-500">Total Question Attempts</p>
           <p className="text-3xl font-extrabold text-indigo-600 mt-1">
-            {stats?.totalAttempts || 12}
+            {stats?.totalAttempts ?? 0}
           </p>
           <p className="text-[11px] text-slate-400 mt-1">Logged across all modules</p>
         </div>
@@ -45,15 +45,15 @@ export default function AdminAnalyticsPage() {
         <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm text-center">
           <p className="text-xs font-semibold text-slate-500">Active Daily Learners</p>
           <p className="text-3xl font-extrabold text-emerald-600 mt-1">
-            {stats?.activeTodayCount || 1}
+            {stats?.activeTodayCount ?? 0}
           </p>
-          <p className="text-[11px] text-slate-400 mt-1">75% Daily active ratio</p>
+          <p className="text-[11px] text-slate-400 mt-1">Active in past 24 hours</p>
         </div>
 
         <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm text-center">
           <p className="text-xs font-semibold text-slate-500">Curriculum Volume</p>
           <p className="text-3xl font-extrabold text-slate-900 mt-1">
-            {(stats?.totalNotes || 3) + (stats?.totalQuestions || 4) + (stats?.totalVideos || 3)}
+            {(stats?.totalNotes ?? 0) + (stats?.totalQuestions ?? 0) + (stats?.totalVideos ?? 0)}
           </p>
           <p className="text-[11px] text-slate-400 mt-1">Notes, PYQs, and Video Assets</p>
         </div>

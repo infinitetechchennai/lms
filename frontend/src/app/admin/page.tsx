@@ -51,10 +51,10 @@ export default function AdminOverviewPage() {
             <Users className="w-4 h-4 text-indigo-600" />
           </div>
           <p className="text-2xl font-extrabold text-slate-900 mt-2">
-            {stats?.totalStudents || 1}
+            {stats?.totalStudents ?? 0}
           </p>
           <span className="text-[11px] text-emerald-600 font-semibold">
-            {stats?.activeTodayCount || 1} Active Today
+            {stats?.activeTodayCount ?? 0} Active Today
           </span>
         </div>
 
@@ -64,31 +64,33 @@ export default function AdminOverviewPage() {
             <HelpCircle className="w-4 h-4 text-amber-600" />
           </div>
           <p className="text-2xl font-extrabold text-slate-900 mt-2">
-            {stats?.totalQuestions || 4}
+            {stats?.totalQuestions ?? 0}
           </p>
           <span className="text-[11px] text-slate-400">NEET & JEE Verified</span>
         </div>
 
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500">Published Notes</span>
+            <span className="text-xs font-semibold text-slate-500">Published Notes & Books</span>
             <BookOpen className="w-4 h-4 text-emerald-600" />
           </div>
           <p className="text-2xl font-extrabold text-slate-900 mt-2">
-            {stats?.totalNotes || 3}
+            {stats?.totalNotes ?? 0}
           </p>
-          <span className="text-[11px] text-slate-400">NCERT Summary Documents</span>
+          <span className="text-[11px] text-slate-400">NCERT Chapters & PDFs</span>
         </div>
 
         <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500">Micro-Video Reels</span>
+            <span className="text-xs font-semibold text-slate-500">Video Classes & Reels</span>
             <Video className="w-4 h-4 text-rose-600" />
           </div>
           <p className="text-2xl font-extrabold text-slate-900 mt-2">
-            {stats?.totalVideos || 3}
+            {stats?.totalVideos ?? 0}
           </p>
-          <span className="text-[11px] text-slate-400">30-40s Concept Capsules</span>
+          <span className="text-[11px] text-slate-500 font-medium">
+            {stats?.totalShortVideos ?? 0} Reels • {stats?.totalFullVideos ?? 0} Full Lectures
+          </span>
         </div>
       </div>
 

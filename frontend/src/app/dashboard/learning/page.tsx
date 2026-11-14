@@ -127,7 +127,7 @@ export default function MyLearningPage() {
                 </div>
                 <div className="flex items-center space-x-3 text-xs text-slate-500">
                   <span className="bg-slate-100 px-2 py-0.5 rounded font-medium">
-                    {ch.topics?.length || 4} Topics
+                    {ch.topics?.length ?? 0} Topics
                   </span>
                   <span className="bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded font-semibold">
                     NCERT High-Yield
@@ -155,15 +155,15 @@ export default function MyLearningPage() {
                 <div className="flex items-center space-x-4 text-xs font-semibold text-slate-600">
                   <span className="flex items-center space-x-1">
                     <BookOpen className="w-3.5 h-3.5 text-[#4F46E5]" />
-                    <span>{ch._count?.notes || 1} Notes</span>
+                    <span>{ch._count?.notes ?? 0} Notes</span>
                   </span>
                   <span className="flex items-center space-x-1">
                     <HelpCircle className="w-3.5 h-3.5 text-amber-600" />
-                    <span>{ch._count?.questions || 15} PYQs</span>
+                    <span>{ch._count?.questions ?? 0} PYQs</span>
                   </span>
                   <span className="flex items-center space-x-1">
                     <Layers className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>{ch._count?.flashcards || 8} Flashcards</span>
+                    <span>{ch._count?.flashcards ?? 0} Flashcards</span>
                   </span>
                 </div>
 

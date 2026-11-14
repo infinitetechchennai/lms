@@ -322,6 +322,7 @@ model Video {
   chapter            Chapter?        @relation(fields: [chapterId], references: [id], onDelete: SetNull)
   title              String
   description        String          @db.Text
+  videoType          String          @default("SHORT") // SHORT | FULL
   durationSeconds    Int             @default(35)
   videoUrl           String
   cloudflareStreamId String?

@@ -182,6 +182,7 @@ export interface Video {
   chapterId?: string | null;
   title: string;
   description: string;
+  videoType?: 'SHORT' | 'FULL';
   durationSeconds: number;
   videoUrl: string;
   thumbnailUrl?: string | null;
@@ -189,6 +190,8 @@ export interface Video {
   isFavorited?: boolean;
   subject?: Subject;
   chapter?: {
+    id?: string;
+    title?: string;
     notes?: { id: string; title: string }[];
     questions?: { id: string; content: string; examYear: number }[];
   };

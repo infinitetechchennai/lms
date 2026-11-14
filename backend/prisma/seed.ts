@@ -289,7 +289,7 @@ async function main() {
         create: [
           {
             title: 'Genetics_Formula_Sheet_NEET.pdf',
-            fileUrl: 'https://smartway-assets.storage.googleapis.com/notes/Genetics_Formula_Sheet_NEET.pdf',
+            fileUrl: 'http://localhost:5000/uploads/sample-ncert-handbook.pdf',
             fileSizeBytes: 2450000,
             isDownloadable: true,
           },
@@ -330,7 +330,7 @@ No current flows through galvanometer branch $I_g = 0$.
         create: [
           {
             title: 'Current_Electricity_Handwritten_Notes.pdf',
-            fileUrl: 'https://smartway-assets.storage.googleapis.com/notes/Current_Electricity_Notes.pdf',
+            fileUrl: 'http://localhost:5000/uploads/sample-ncert-handbook.pdf',
             fileSizeBytes: 3120000,
             isDownloadable: true,
           },
@@ -368,7 +368,7 @@ $$\\text{Steric Number} (SN) = \\frac{1}{2} [V + M - C + A]$$
         create: [
           {
             title: 'Chemical_Bonding_Summary_NEET_JEE.pdf',
-            fileUrl: 'https://smartway-assets.storage.googleapis.com/notes/Chemical_Bonding_Notes.pdf',
+            fileUrl: 'http://localhost:5000/uploads/sample-ncert-handbook.pdf',
             fileSizeBytes: 1890000,
             isDownloadable: true,
           },
@@ -682,15 +682,16 @@ $$\\text{Steric Number} (SN) = \\frac{1}{2} [V + M - C + A]$$
     },
   });
 
-  // 11. Seed Short Educational Videos (30-40s Vertical Reels)
+  // 11. Seed Educational Videos (Reels / Shorts and Full Video Lectures)
   await prisma.video.create({
     data: {
       subjectId: biology.id,
       chapterId: bioCh1.id,
       title: '30-Sec Hack: Solve Dihybrid Cross Ratios Instantly',
       description: 'Quick memory mnemonic for 9:3:3:1 phenotypic ratios and recombinant calculations for NEET.',
+      videoType: 'SHORT',
       durationSeconds: 34,
-      videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4',
+      videoUrl: 'https://www.youtube.com/shorts/W42bT_P6r7M',
       thumbnailUrl: 'https://images.unsplash.com/photo-1530497610245-94d3c16cda28?auto=format&fit=crop&w=600&q=80',
       viewsCount: 4820,
     },
@@ -702,8 +703,9 @@ $$\\text{Steric Number} (SN) = \\frac{1}{2} [V + M - C + A]$$
       chapterId: phyCh1.id,
       title: 'Kirchhoff Loop Sign Convention in 35 Seconds',
       description: 'Never make another sign error in KVL circuit equations with this intuitive water flow analogy.',
+      videoType: 'SHORT',
       durationSeconds: 36,
-      videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4',
+      videoUrl: 'https://www.youtube.com/shorts/3O_QvWfH3x0',
       thumbnailUrl: 'https://images.unsplash.com/photo-1636466497217-26a8cbeaf0aa?auto=format&fit=crop&w=600&q=80',
       viewsCount: 6150,
     },
@@ -715,10 +717,54 @@ $$\\text{Steric Number} (SN) = \\frac{1}{2} [V + M - C + A]$$
       chapterId: chemCh1.id,
       title: 'MOT Bond Order Shortcut: The 14-Electron Peak',
       description: 'Draw any diatomic bond order without drawing the full molecular orbital diagram.',
+      videoType: 'SHORT',
       durationSeconds: 32,
-      videoUrl: 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4',
+      videoUrl: 'https://www.youtube.com/shorts/qL4T44c_kFc',
       thumbnailUrl: 'https://images.unsplash.com/photo-1603126857599-f6e157fa2fe6?auto=format&fit=crop&w=600&q=80',
       viewsCount: 3940,
+    },
+  });
+
+  // Seed Full-Length Classroom Lectures (Full Videos)
+  await prisma.video.create({
+    data: {
+      subjectId: physics.id,
+      chapterId: phyCh1.id,
+      title: 'Complete Current Electricity Masterclass: Ohm to Potentiometer (Full Lecture)',
+      description: 'Comprehensive 45-minute deep-dive covering Drift Velocity, Kirchhoffs Laws, Wheatstone Bridge, and NEET/JEE Advanced numericals.',
+      videoType: 'FULL',
+      durationSeconds: 2700, // 45 minutes
+      videoUrl: 'https://www.youtube.com/watch?v=aqz-KE-bpKQ',
+      thumbnailUrl: 'https://images.unsplash.com/photo-1507668077129-56e32842fceb?auto=format&fit=crop&w=800&q=80',
+      viewsCount: 12450,
+    },
+  });
+
+  await prisma.video.create({
+    data: {
+      subjectId: biology.id,
+      chapterId: bioCh1.id,
+      title: 'Principles of Inheritance & Variation: NCERT Line-by-Line Full Lecture',
+      description: 'Complete 52-minute visual lecture covering Mendelian Genetics, Incomplete Dominance, Chromosomal Theory, and Pedigree Analysis for NEET 2026.',
+      videoType: 'FULL',
+      durationSeconds: 3120, // 52 minutes
+      videoUrl: 'https://www.youtube.com/watch?v=8m6hHRlKwxY',
+      thumbnailUrl: 'https://images.unsplash.com/photo-1532094349884-543bc11b234d?auto=format&fit=crop&w=800&q=80',
+      viewsCount: 18900,
+    },
+  });
+
+  await prisma.video.create({
+    data: {
+      subjectId: mathematics.id,
+      chapterId: mathCh1.id,
+      title: 'Definite Integrals & Leibniz Rule Complete JEE Advanced Marathon',
+      description: '60-minute intensive problem-solving session breaking down King and Queen properties with 10 past JEE Advanced derivations.',
+      videoType: 'FULL',
+      durationSeconds: 3600, // 60 minutes
+      videoUrl: 'https://www.youtube.com/watch?v=5Vkg1Y5p83w',
+      thumbnailUrl: 'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&w=800&q=80',
+      viewsCount: 15300,
     },
   });
 

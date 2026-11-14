@@ -58,3 +58,8 @@ Thumbs.db
 .eslintcache
 .turbo/
 
+# Uploaded User Media
+backend/uploads/*
+!backend/uploads/sample-ncert-handbook.pdf
+
+

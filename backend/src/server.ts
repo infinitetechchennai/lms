@@ -2,6 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
+import path from 'path';
+import fs from 'fs';
 import { config } from './config/index.js';
 import { apiLimiter } from './middleware/rateLimiter.js';
 import { errorHandler } from './middleware/error.js';
@@ -10,8 +12,20 @@ import { prisma } from './db.js';
 
 export const app = express();
 
-// Security and utility middleware
-app.use(helmet());
+// Ensure local uploads directory exists
+const uploadsDir = path.join(process.cwd(), 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+// Security and utility middleware (configured to allow media streaming & PDF viewing)
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+    crossOriginEmbedderPolicy: false,
+    contentSecurityPolicy: false,
+  })
+);
 app.use(
   cors({
     origin: [config.clientUrl, 'http://localhost:3000', 'http://127.0.0.1:3000'],
@@ -21,8 +35,11 @@ app.use(
   })
 );
 
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
+// Serve uploaded assets (PDF books, videos, thumbnails) statically
+app.use('/uploads', express.static(uploadsDir));
 
 if (config.nodeEnv !== 'test') {
   app.use(morgan('dev'));

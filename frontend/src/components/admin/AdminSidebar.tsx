@@ -29,7 +29,7 @@ export default function AdminSidebar() {
     { label: 'Curriculum Chapters', href: '/admin/chapters', icon: FolderTree },
     { label: 'Notes & Formulae', href: '/admin/notes', icon: FileText },
     { label: 'PYQ Question Bank', href: '/admin/questions', icon: HelpCircle },
-    { label: 'Short Video Reels', href: '/admin/videos', icon: Video },
+    { label: 'Video Lectures & Reels', href: '/admin/videos', icon: Video },
     { label: 'Master Study Plans', href: '/admin/plans', icon: Calendar },
     { label: 'Platform Analytics', href: '/admin/analytics', icon: BarChart3 },
   ];
@@ -77,8 +77,16 @@ export default function AdminSidebar() {
       {/* Admin Profile Footer */}
       <div className="p-4 border-t border-slate-800 space-y-2">
         <div className="p-2.5 rounded-xl bg-slate-800/60 text-xs">
-          <p className="font-bold text-white truncate">Dr. Vikram Malhotra</p>
-          <p className="text-[10px] text-indigo-400">Curriculum Director</p>
+          <p className="font-bold text-white truncate">
+            {user?.profile && 'fullName' in user.profile
+              ? user.profile.fullName
+              : 'Administrator'}
+          </p>
+          <p className="text-[10px] text-indigo-400">
+            {user?.profile && 'department' in user.profile
+              ? user.profile.department
+              : 'Curriculum Director'}
+          </p>
         </div>
 
         <button
